@@ -201,10 +201,10 @@ class CBF:
                 h,
                 solver_tol=self.solver_tol,
             )
-        if DEBUG_SAFETY_FILTER:
-            print(
-                f"{'Converged' if converged else 'Did not converge'}. Iterations: {iters}"
-            )
+        # if DEBUG_SAFETY_FILTER:
+        #     print(
+        #         f"{'Converged' if converged else 'Did not converge'}. Iterations: {iters}"
+        #     )
 
         return x_qp[: self.m], h_est, h_true, Lfh_est, Lfh_true, Lgh_est, Lgh_true, t_qp
 
