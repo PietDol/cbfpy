@@ -160,9 +160,30 @@ class CBF:
         Returns:
             Array: Safe control input, shape (m,)
         """
-        P, q, A, b, G, h = self.qp_data(z, u_des, *h_args)
-        if self.relax_qp:
-            x_qp = qpax.solve_qp_elastic_primal(
+        # added and changed to CBFpy
+        # start change
+        if len(h_args) <= 1:
+            safety_margin = h_args[0]
+        else:
+            # safety margin and constraint to stay within reachable set
+            safety_margin, z_true, G_constraint, h_constraint = h_args
+        P, q, A, b, G, h = self.qp_data(z, u_des, safety_margin)
+
+        # concat the constraints to G and h
+        G = jnp.concat([G, G_constraint])
+        h = jnp.concat([h, h_constraint])
+
+        # calculate Lfh, Lgh, and h
+        h_est, Lfh_est = self.h_and_Lfh(z, safety_margin)
+        h_true, Lfh_true = self.h_and_Lfh(z_true, jnp.zeros(self.num_cbf))
+        Lgh_est = self.Lgh(z, safety_margin)
+        Lgh_true = self.Lgh(z_true, jnp.zeros(self.num_cbf))
+
+        # end change
+        # P, q, A, b, G, h = self.qp_data(z, u_des, *h_args)
+
+        if self.relax_cbf:
+            x_qp, t_qp, s1_qp, s2_qp, z1_qp, z2_qp, converged, iters = self.qp_solver(
                 P,
                 q,
                 G,
@@ -180,7 +201,12 @@ class CBF:
                 h,
                 solver_tol=self.solver_tol,
             )
-        return x_qp[: self.m]
+        if DEBUG_SAFETY_FILTER:
+            print(
+                f"{'Converged' if converged else 'Did not converge'}. Iterations: {iters}"
+            )
+
+        return x_qp[: self.m], h_est, h_true, Lfh_est, Lfh_true, Lgh_est, Lgh_true, t_qp
 
     def h(self, z: ArrayLike, *h_args) -> Array:
         """Barrier function(s)
