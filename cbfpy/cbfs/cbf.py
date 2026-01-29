@@ -182,7 +182,7 @@ class CBF:
         # end change
         # P, q, A, b, G, h = self.qp_data(z, u_des, *h_args)
 
-        if self.relax_cbf:
+        if self.relax_qp:
             x_qp, t_qp, s1_qp, s2_qp, z1_qp, z2_qp, converged, iters = self.qp_solver(
                 P,
                 q,
