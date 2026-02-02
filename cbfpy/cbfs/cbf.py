@@ -68,6 +68,7 @@ class CBF:
         u_max: Optional[tuple],
         control_constrained: bool,
         relax_qp: bool,
+        cbf_relaxation_penalty: float,
         constraint_relaxation_penalties: tuple,
         h_1: Callable[[ArrayLike], Array],
         h_2: Callable[[ArrayLike], Array],
@@ -87,6 +88,7 @@ class CBF:
         self.control_constrained = control_constrained
         self.relax_qp = relax_qp
         self.constraint_relaxation_penalties = constraint_relaxation_penalties
+        self.cbf_relaxation_penalty = cbf_relaxation_penalty
         self.h_1 = h_1
         self.h_2 = h_2
         self.f = f
@@ -115,6 +117,7 @@ class CBF:
             config.u_max,
             config.control_constrained,
             config.relax_qp,
+            config.cbf_relaxation_penalty,
             config.constraint_relaxation_penalties,
             config.h_1,
             config.h_2,
@@ -183,12 +186,12 @@ class CBF:
         # P, q, A, b, G, h = self.qp_data(z, u_des, *h_args)
 
         if self.relax_qp:
-            x_qp = qpax.solve_qp_elastic_primal(
+            x_qp, t_qp, s1_qp, s2_qp, z1_qp, z2_qp, converged, iters = qpax.solve_qp_elastic(
                 P,
                 q,
                 G,
                 h,
-                penalty=jnp.asarray(self.constraint_relaxation_penalties),
+                self.cbf_relaxation_penalty,
                 solver_tol=self.solver_tol,
             )
         else:
